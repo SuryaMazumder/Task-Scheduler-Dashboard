@@ -1,6 +1,7 @@
 import axios from "axios";
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import {Link, Navigate} from "react-router-dom";
+import { UserContext } from "../UserContext";
 
 function LoginPage() {
    
@@ -9,14 +10,16 @@ function LoginPage() {
   const [password,setPassword]=useState('')
   const [redirect,setRedirect]=useState(false)
 
-  function loginApp(ev){
+const {setUser}=  useContext(UserContext)
+  async function  loginSubmit(ev){
     ev.preventDefault()
 
     try{
-      axios.post('/login',{
+     const {data}=await axios.post('/login',{
         email,
         password
       })
+      setUser(data)
       setRedirect(true)
     }catch(err){
       alert('Login failed.Please try again later !!')
@@ -33,7 +36,7 @@ function LoginPage() {
     <h1 className="text-4xl text-center mb-4">Login</h1>
     
 
-        <form className="max-w-md mx-auto" onSubmit={loginApp}> 
+        <form className="max-w-md mx-auto" onSubmit={loginSubmit}> 
         <input type="email" placeholder='your@email.com' value={email} onChange={ev=>setEmail(ev.target.value)}/>
         <input type="password" placeholder='password' value={password} onChange={ev=>setPassword(ev.target.value)}/>
         <button className="primary" >Login</button>
