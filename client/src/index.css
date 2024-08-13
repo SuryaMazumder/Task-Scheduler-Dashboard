@@ -9,3 +9,8 @@ button.primary{
     background-color: #F5385D;
     @apply bg-primary p-2 w-full text-white rounded-2xl
 }
+
+*{
+    font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+    font-weight:lighter;
+}
