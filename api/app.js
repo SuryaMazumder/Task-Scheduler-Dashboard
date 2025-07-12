@@ -13,16 +13,26 @@ app.use(express.json());
 const taskRoutes = require("./routes/Task.routes");
 
 const salt = bcrypt.genSaltSync(10);
+const allowedOrigins = [
+  "http://localhost:5173", // for local development
+  process.env.FRONTEND_URL, // for deployed frontend
+];
+
 app.use(
   cors({
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
-    origin: "http://localhost:5173",
   })
 );
+//suryakantamazumder9 xWoOYrLwAO8JAer0
 app.use(cookieParser());
-const jwtSecret = "kfkdflksflkfpdepeperrcf";
 mongoose.connect(process.env.MONGO_URL);
-console.log(process.env.MONGO_URL);
 
 app.use("/api/tasks", taskRoutes);
 app.post("/register", async (req, res) => {
@@ -111,7 +121,7 @@ app.get("/profile", (req, res) => {
   const { token } = req.cookies;
 
   if (token) {
-    jwt.verify(token, jwtSecret, async (err, tokendata) => {
+    jwt.verify(token, process.env.JWT_SECRET, async (err, tokendata) => {
       if (err) throw err;
       const { name, email, _id } = await userModel.findById(tokendata.id);
 
@@ -125,4 +135,6 @@ app.get("/profile", (req, res) => {
 app.post("/logout", (req, res) => {
   res.cookie("token", "").json(true);
 });
-app.listen(4040);
+app.listen(process.env.PORT || 4040, () => {
+  console.log("Server running on port", process.env.PORT || 4040);
+});

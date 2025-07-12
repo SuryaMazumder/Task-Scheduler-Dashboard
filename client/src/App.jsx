@@ -11,7 +11,7 @@ import Account from './pages/AccountPage'
 import CreateTaskForm from './components/CreateTaskForm'
 import FactsPage from './pages/Funfacts'
 import ListTaskViews from './components/ListTaskViews'
-axios.defaults.baseURL='http://localhost:4040'
+axios.defaults.baseURL = import.meta.env.VITE_BACKEND_URL;
 axios.defaults.withCredentials=true
 function App() {
   return (
@@ -19,7 +19,7 @@ function App() {
       <UserContextProvider>
         <Routes>
           <Route path='/' element={<Layout />}>
-            <Route index element={<IndexPage />} />
+            <Route index element={<LoginPage />} />
             <Route path='/login' element={<LoginPage />} />
             <Route path='/register' element={<RegisterPage />} />
             <Route path='/account' element={<AccountPage />} />
