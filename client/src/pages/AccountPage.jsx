@@ -1,59 +1,80 @@
-import React, { useContext, useState } from "react";
-import { UserContext } from "../UserContext";
-import { Link, Navigate, useLocation } from "react-router-dom";
-import axios from "axios";
-import PlacesPage from "./PlacesPage";
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import Header from './Header';
+import SlidingCalendarSection from '../components/UpperCalenderTask';
+import TaskFilter from '../components/TaskFilter';
+import axios from 'axios';
+import HourlyTaskShow from '../components/HourlyTaskShow';
+import ListTaskViews from '../components/ListTaskViews';
 
-function AccountPage() {
-    const [redirect,setRedirect]=useState(null)
-    const {user,ready,setUser}=useContext(UserContext)
-    const {pathname}=useLocation()
-    let subpage =pathname.split('/')?.[2];
+const Account = () => {
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [active, setActive] = useState(0);
+  const [taskCounts, setTaskCounts] = useState([0, 0, 0]);
+  const [viewMode, setViewMode] = useState('day');
+  const navigate = useNavigate();
 
-    if(subpage===undefined){
-        subpage='profile'
-    }
+  const handleTodayClick = () => {
+    setSelectedDate(new Date());
+  };
 
-    async function logout(){
-        await axios.post('/logout')
-        setRedirect('/')
-        setUser(null)
-    }
-    function linkClasses(type=null){
-           let classes='inline-flex gap-1 py-2 px-6 rounded-full';
-           if(type===subpage){
-            classes += ' bg-primary text-white';
-           }else{
+  useEffect(() => {
+    const fetchCounts = async () => {
+      try {
+        const res = await axios.get('/api/tasks/taskSummary', {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        });
 
-            classes+='bg-gray-200'
-           }
-           return classes
-    }
-   
-    if(!ready){
-        return 'Loading.............Please Wait !!'
-    }
+        const data = res.data;
+        const countsArray = [
+          data.myTasks ?? 0,
+          data.delegatedTasks ?? 0,
+          data.meetings ?? 0
+        ];
+        setTaskCounts(countsArray);
+      } catch (err) {
+        console.error('Error fetching task counts:', err);
+      }
+    };
 
-    if( ready && !user){
-        return <Navigate to={'/login'}/>
+    fetchCounts();
+  }, []);
+
+  const token = localStorage.getItem("token");
+
+  useEffect(() => {
+    if (!token) {
+      navigate('/login', { replace: true });
     }
-    if(redirect){
-        return <Navigate to={redirect}/>
-    }
-   
+  }, [token, navigate]);
+
+  if (!token) return <div className="text-center mt-10">Redirecting...</div>;
+
   return (
-  <>
-   <nav className="w-full flex justify-around mt-8 gap-2">
-    <Link className={linkClasses('profile')} to={'/account'}>My Profile</Link>
-    <Link className={linkClasses('bookings')} to={'/account/bookings'}>My Bookings</Link>
-    <Link className={linkClasses('places')} to={'/account/places'}>My Accomodation</Link>
-<button onClick={logout} className="primary max-w-sm mt-2">Logout</button>
-   </nav>
-   {subpage === 'places' && (
-        <PlacesPage />
-      )}
-  </>
-  )
-}
+    <>
+      <Header
+        onTodayClick={handleTodayClick}
+        viewMode={viewMode}
+        setViewMode={setViewMode}
+      />
 
-export default AccountPage;
+      <TaskFilter active={active} setActive={setActive} counts={taskCounts} />
+
+      {viewMode === 'list' ? (
+        <ListTaskViews selectedDate={selectedDate} />
+      ) : (
+        <>
+          <SlidingCalendarSection
+            selectedDate={selectedDate}
+            setSelectedDate={setSelectedDate}
+          />
+          <HourlyTaskShow selectedDate={selectedDate} />
+        </>
+      )}
+    </>
+  );
+};
+
+export default Account;

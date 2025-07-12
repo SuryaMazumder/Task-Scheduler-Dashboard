@@ -4,9 +4,10 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: "#F5385D",
+        primary: "#2563eb", // Tailwind's blue-600
       },
     },
   },
   plugins: [],
+  darkMode: "class",
 };

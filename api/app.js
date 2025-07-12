@@ -5,9 +5,13 @@ const userModel = require("./models/User");
 require("dotenv").config();
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const util = require("util");
+const jwtSign = util.promisify(jwt.sign);
 const cookieParser = require("cookie-parser");
 const app = express();
 app.use(express.json());
+const taskRoutes = require("./routes/Task.routes");
+
 const salt = bcrypt.genSaltSync(10);
 app.use(
   cors({
@@ -19,50 +23,87 @@ app.use(cookieParser());
 const jwtSecret = "kfkdflksflkfpdepeperrcf";
 mongoose.connect(process.env.MONGO_URL);
 console.log(process.env.MONGO_URL);
+
+app.use("/api/tasks", taskRoutes);
 app.post("/register", async (req, res) => {
   const { name, email, password } = req.body;
+
   try {
+    const hashedPassword = bcrypt.hashSync(password, salt);
+
     const newUser = await userModel.create({
       name,
       email,
-      password: bcrypt.hashSync(password, salt),
+      password: hashedPassword,
+    });
+
+    res.status(201).json({
+      message: "User registered successfully",
+      user: {
+        _id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+      },
     });
   } catch (error) {
-    res.status(422).json(error);
-  }
+    console.error("Register error:", error);
+    if (error.code === 11000) {
+      // Email already exists
+      return res.status(409).json({ message: "Email already registered" });
+    }
 
-  res.json(newUser);
+    if (error.name === "ValidationError") {
+      const messages = Object.values(error.errors).map((err) => err.message);
+      return res
+        .status(400)
+        .json({ message: "Validation error", errors: messages });
+    }
+
+    res.status(500).json({ message: "Server error", error });
+  }
 });
 
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    let isLoggedUser = await userModel.findOne({ email });
-    if (isLoggedUser) {
-      const passOk = bcrypt.compareSync(password, isLoggedUser.password);
-      if (passOk) {
-        jwt.sign(
-          {
-            email: isLoggedUser.email,
-            id: isLoggedUser._id,
-            name: isLoggedUser.name,
-          },
-          jwtSecret,
-          {},
-          (err, token) => {
-            if (err) throw err;
-            res.cookie("token", token).json(isLoggedUser);
-          }
-        );
-      } else {
-        res.status(404).json("password not matched");
-      }
-    } else {
-      res.json("Not found");
+    const isLoggedUser = await userModel.findOne({ email });
+
+    if (!isLoggedUser) {
+      return res.status(404).json("User not found");
     }
+
+    const passOk = bcrypt.compareSync(password, isLoggedUser.password);
+    if (!passOk) {
+      return res.status(401).json("Password incorrect");
+    }
+
+    const token = jwt.sign(
+      {
+        email: isLoggedUser.email,
+        id: isLoggedUser._id,
+        name: isLoggedUser.name,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
+    );
+
+    // Send token in cookie and response
+    res
+      .cookie("token", token, {
+        httpOnly: true,
+        sameSite: "Lax",
+        secure: false, // set to true in production w/ HTTPS
+      })
+      .json({
+        token,
+        user: isLoggedUser,
+      });
+
+    console.log("✅ Login successful:", token, isLoggedUser);
   } catch (error) {
-    res.status(404).json(error);
+    console.error("❌ Login error:", error);
+    res.status(500).json("Login failed");
   }
 });
 
