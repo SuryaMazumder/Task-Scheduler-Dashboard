@@ -1,2 +1,5 @@
 api/node_modules/mongoose/node_modules/mongodb/src/index.ts
 api/node_modules
+api/.env
+
+client/.env
