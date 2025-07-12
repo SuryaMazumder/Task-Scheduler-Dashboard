@@ -1,5 +1,7 @@
 # 🗓️ Task Scheduler Dashboard
 
+VERCEL APP URL : https://task-scheduler-dashboard-xi.vercel.app/
+
 A full-stack Task Management Dashboard built with **React (Vite)**, **Node.js (Express)**, and **MongoDB**. Users can create, view, and manage their tasks visually using a calendar interface, list view, hourly blocks, and task filters. Fully responsive and supports **dark/light theme toggling**.
 
 ---
